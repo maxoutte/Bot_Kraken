@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from itertools import product
 
 import pandas as pd
 
@@ -22,6 +23,8 @@ class Backtester:
         max_drawdown = 0.0
         wins = 0
         losses = 0
+        gross_profit = 0.0
+        gross_loss = 0.0
         trades: list[dict] = []
         position: Position | None = None
 
@@ -48,12 +51,18 @@ class Backtester:
                 pnl = (price - position.entry_price) * position.size
                 if position.side == "short":
                     pnl *= -1
-                capital += pnl
+                fees = ((position.entry_price * position.size) + (price * position.size)) * self.config.fee_rate
+                pnl_after_fees = pnl - fees
+                capital += pnl_after_fees
                 peak_capital = max(peak_capital, capital)
                 drawdown = (peak_capital - capital) / peak_capital if peak_capital else 0.0
                 max_drawdown = max(max_drawdown, drawdown)
-                wins += 1 if pnl > 0 else 0
-                losses += 1 if pnl <= 0 else 0
+                if pnl_after_fees > 0:
+                    wins += 1
+                    gross_profit += pnl_after_fees
+                else:
+                    losses += 1
+                    gross_loss += abs(pnl_after_fees)
                 trades.append(
                     {
                         "opened_at": position.opened_at,
@@ -62,7 +71,9 @@ class Backtester:
                         "entry_price": position.entry_price,
                         "exit_price": price,
                         "size": position.size,
-                        "pnl": pnl,
+                        "gross_pnl": pnl,
+                        "fees": fees,
+                        "net_pnl": pnl_after_fees,
                         "reason": signal.reason,
                     }
                 )
@@ -70,6 +81,8 @@ class Backtester:
 
         total_trades = wins + losses
         win_rate = wins / total_trades if total_trades else 0.0
+        profit_factor = gross_profit / gross_loss if gross_loss else None
+        expectancy = (capital - self.config.starting_capital) / total_trades if total_trades else 0.0
         return {
             "starting_capital": self.config.starting_capital,
             "ending_capital": capital,
@@ -78,7 +91,36 @@ class Backtester:
             "wins": wins,
             "losses": losses,
             "win_rate": win_rate,
+            "profit_factor": profit_factor,
+            "expectancy_per_trade": expectancy,
             "max_drawdown": max_drawdown,
             "open_position": asdict(position) if position else None,
             "trades": trades,
         }
+
+
+def optimize(df: pd.DataFrame, config: BotConfig) -> list[dict]:
+    results: list[dict] = []
+    breakout_values = [10, 20, 30]
+    atr_stop_values = [1.2, 1.5, 2.0]
+    rr_values = [1.5, 2.0, 2.5]
+
+    for breakout, atr_stop, rr in product(breakout_values, atr_stop_values, rr_values):
+        local = BotConfig(**{**config.__dict__, "breakout_lookback": breakout, "atr_stop_multiplier": atr_stop, "take_profit_rr": rr})
+        stats = Backtester(local).run(df)
+        results.append({
+            "breakout_lookback": breakout,
+            "atr_stop_multiplier": atr_stop,
+            "take_profit_rr": rr,
+            "net_pnl": stats["net_pnl"],
+            "win_rate": stats["win_rate"],
+            "profit_factor": stats["profit_factor"],
+            "max_drawdown": stats["max_drawdown"],
+            "total_trades": stats["total_trades"],
+        })
+
+    return sorted(
+        results,
+        key=lambda item: (item["net_pnl"], item["profit_factor"] or 0.0, -item["max_drawdown"]),
+        reverse=True,
+    )
