@@ -45,3 +45,9 @@ class OrderResult:
     size: float
     price: float
     reason: str
+
+
+@dataclass
+class StrategyDefinition:
+    name: str
+    params: dict

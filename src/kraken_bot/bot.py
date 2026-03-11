@@ -7,14 +7,14 @@ from .config import BotConfig
 from .exchange import KrakenFuturesClient
 from .models import Position
 from .risk import RiskManager
-from .strategy import BreakoutTrendStrategy
+from .strategy import build_strategy
 
 
 class TradingBot:
     def __init__(self, config: BotConfig) -> None:
         self.config = config
         self.exchange = KrakenFuturesClient(config)
-        self.strategy = BreakoutTrendStrategy(config)
+        self.strategy = build_strategy(config)
         self.risk = RiskManager(config)
         self.position: Position | None = None
         self.capital = config.starting_capital
@@ -28,6 +28,8 @@ class TradingBot:
 
         result = {
             "timestamp": timestamp,
+            "strategy": self.config.strategy_name,
+            "symbol": self.config.symbol,
             "price": price,
             "signal": asdict(signal),
             "position": asdict(self.position) if self.position else None,

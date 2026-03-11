@@ -1,29 +1,37 @@
 # Kraken Futures Bot
 
-Bot de trading **Kraken Futures** en **Python**, pensé pour être utilisé sérieusement :
-**données de marché réelles**, **paper trading par défaut**, **gestion du risque stricte** et **backtests** avant tout passage en live.
+Bot de trading **Kraken Futures** en **Python**, orienté **paper trading**, **backtests** et **comparaison de stratégies** sur des marchés comme **ETH/USD**.
 
-## Ce que fait cette V2
+## V3 : ce qui a été ajouté
 
-- récupère de vraies bougies Kraken Futures via l'endpoint public charts
-- récupère les tickers Kraken Futures via l'API publique
-- exécute une stratégie initiale de type **breakout + filtre de tendance + filtre de volatilité**
-- calcule la taille de position selon un risque fixe par trade
-- supporte le **paper trading** par défaut
-- prépare l'exécution réelle Kraken Futures avec garde-fou `LIVE_ENABLED=false` par défaut
-- permet le **backtest** et une première **optimisation de paramètres**
+- passage par défaut sur `PF_ETHUSD`
+- comparaison de plusieurs stratégies classiques
+- optimisation par famille de stratégie
+- exécution d'une stratégie choisie via CLI
+- garde-fous toujours actifs pour éviter le live accidentel
 
-## Architecture
+## Stratégies intégrées
 
-- `src/kraken_bot/config.py` — configuration et mapping des timeframes
-- `src/kraken_bot/models.py` — modèles métier
-- `src/kraken_bot/indicators.py` — EMA / ATR
-- `src/kraken_bot/strategy.py` — stratégie breakout trend following filtrée
-- `src/kraken_bot/risk.py` — risk manager
-- `src/kraken_bot/exchange.py` — client Kraken Futures public + base d'exécution live
-- `src/kraken_bot/backtest.py` — backtest + mini optimisation
-- `src/kraken_bot/bot.py` — boucle bot
-- `main.py` — CLI
+### 1. `breakout`
+Approche trend-following :
+- cassure du plus haut / plus bas récent
+- filtre de tendance EMA
+- filtre de volatilité ATR
+- stop ATR + take profit en ratio risque/rendement
+
+### 2. `ema_trend`
+Approche classique et connue :
+- suivi de tendance par EMA rapide / EMA lente
+- entrée dans le sens de la tendance
+- stop ATR
+- sortie sur stop, target ou retournement de croisement
+
+### 3. `mean_reversion`
+Approche de retour à la moyenne :
+- base moyenne mobile
+- écart statistique type Bollinger / z-score
+- entrée quand le prix s'éloigne fortement de la moyenne
+- sortie sur retour vers la moyenne
 
 ## Installation
 
@@ -37,12 +45,13 @@ cp .env.example .env
 
 ## Configuration
 
-Variables principales dans `.env` :
+Variables importantes :
 
-- `KRAKEN_SYMBOL=PF_XBTUSD`
+- `KRAKEN_SYMBOL=PF_ETHUSD`
 - `TIMEFRAME_MINUTES=15`
 - `PAPER_TRADING=true`
 - `LIVE_ENABLED=false`
+- `STRATEGY_NAME=breakout`
 - `RISK_PER_TRADE=0.01`
 - `MAX_LEVERAGE=2`
 - `BREAKOUT_LOOKBACK=20`
@@ -51,99 +60,73 @@ Variables principales dans `.env` :
 - `ATR_PERIOD=14`
 - `ATR_STOP_MULTIPLIER=1.5`
 - `TAKE_PROFIT_RR=2.0`
-- `MIN_TREND_GAP_PCT=0.0015`
-- `MIN_ATR_PCT=0.0025`
+- `MEAN_REVERSION_PERIOD=20`
+- `BOLLINGER_STD=2.0`
+- `ZSCORE_ENTRY=2.0`
+- `ZSCORE_EXIT=0.5`
 - `FEE_RATE=0.0005`
 
-## Usage
+## Commandes utiles
 
-### 1. Récupérer les tickers Kraken Futures
+### Tickers
 
 ```bash
 python main.py tickers
 ```
 
-### 2. Backtest sur fichier CSV
-
-Le CSV doit contenir : `timestamp,open,high,low,close,volume`
+### Backtest d'une stratégie précise
 
 ```bash
-python main.py backtest --csv data/sample_ohlcv.csv
+python main.py backtest --strategy breakout
+python main.py backtest --strategy ema_trend
+python main.py backtest --strategy mean_reversion
 ```
 
-### 3. Backtest sur données Kraken Futures réelles
+### Comparer les stratégies connues sur le même marché
 
 ```bash
-python main.py backtest
+python main.py compare
 ```
 
-### 4. Comparer plusieurs variantes de paramètres
+### Optimiser une famille de stratégie
 
 ```bash
-python main.py optimize
+python main.py optimize --strategy breakout --top 10
+python main.py optimize --strategy ema_trend --top 10
+python main.py optimize --strategy mean_reversion --top 10
 ```
 
-### 5. Exécuter une itération du bot en paper trading
+### Exécuter une itération en paper trading
 
 ```bash
-python main.py run --once
+python main.py run --strategy breakout --once
 ```
 
-### 6. Boucle continue
+## Important
 
-```bash
-python main.py run
-```
+Le but n'est pas de choisir la stratégie qui a juste le meilleur **win rate**, mais celle qui garde un bon compromis entre :
+- profit factor
+- drawdown
+- fréquence de trade
+- comportement cohérent selon les régimes de marché
 
-## Stratégie actuelle
+## Live trading
 
-La V2 utilise une logique volontairement simple et robuste :
-
-- breakout du plus haut / plus bas sur `N` bougies
-- filtre de tendance via croisement et écart EMA fast / EMA slow
-- filtre de volatilité via ATR relatif
-- stop loss basé sur ATR
-- take profit basé sur un ratio risque/rendement
-- fermeture anticipée si renversement de tendance
-
-L'objectif n'est **pas** de maximiser artificiellement le taux de réussite, mais de viser une stratégie plus saine :
-
-- espérance positive
-- drawdown contenu
-- comportement compréhensible
-- réglages testables
-
-## Live trading : important
-
-Le code contient une base d'exécution réelle, mais elle est **bloquée par défaut**.
-
-Pour éviter un accident :
+Le live reste volontairement bloqué par défaut :
 
 - `PAPER_TRADING=true`
 - `LIVE_ENABLED=false`
 
-Même avec les clés API remplies, tant que `LIVE_ENABLED=false`, les ordres réels restent bloqués.
+Même avec les clés API, pas d'ordre réel tant que tu ne l'actives pas explicitement.
 
 ## Limites actuelles
 
-Cette base est déjà utile, mais pas encore une prod institutionnelle. À ajouter ensuite :
-
-- gestion robuste des erreurs API et retries
-- persistance locale des positions / ordres / logs
-- websocket temps réel
-- confirmation précise des formats d'ordre live Kraken Futures selon ton compte
-- dashboard de suivi
-- backtests multi-périodes plus larges
-- walk-forward analysis
+- pas encore de websocket temps réel
+- pas encore de persistance robuste des états et ordres
+- pas encore de walk-forward analysis
+- optimisation simple, pas encore de framework complet de recherche paramétrique
 
 ## Avertissement
 
-Le trading futures crypto est risqué.
-
-Cette base doit servir à :
-1. backtester,
-2. paper trader,
-3. observer,
-4. seulement ensuite envisager le live avec petites tailles.
-
-Ne passe pas en réel sans validation sérieuse des métriques, du drawdown et du comportement du bot sur plusieurs régimes de marché.
+Le futures crypto reste risqué.
+Cette base doit servir à tester, comparer, éliminer les mauvaises idées rapidement et ne passer au live qu'après validation sérieuse.

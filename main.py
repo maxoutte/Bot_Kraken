@@ -10,9 +10,10 @@ SRC = os.path.join(ROOT, "src")
 if SRC not in sys.path:
     sys.path.insert(0, SRC)
 
-from kraken_bot.backtest import Backtester, optimize
+from kraken_bot.backtest import Backtester, compare_known_strategies, optimize
 from kraken_bot.bot import TradingBot
 from kraken_bot.config import load_config
+from kraken_bot.strategy import config_with_strategy
 
 
 def main() -> None:
@@ -22,18 +23,26 @@ def main() -> None:
     run_parser = subparsers.add_parser("run", help="Lancer le bot")
     run_parser.add_argument("--csv", help="Chemin CSV OHLCV pour simulation", default=None)
     run_parser.add_argument("--once", action="store_true", help="Exécuter une seule itération")
+    run_parser.add_argument("--strategy", choices=["breakout", "ema_trend", "mean_reversion"], default=None)
 
     backtest_parser = subparsers.add_parser("backtest", help="Backtest sur CSV ou marché Kraken")
     backtest_parser.add_argument("--csv", help="Chemin CSV OHLCV")
+    backtest_parser.add_argument("--strategy", choices=["breakout", "ema_trend", "mean_reversion"], default=None)
 
     optimize_parser = subparsers.add_parser("optimize", help="Comparer plusieurs paramètres")
     optimize_parser.add_argument("--csv", help="Chemin CSV OHLCV")
     optimize_parser.add_argument("--top", type=int, default=10, help="Nombre de résultats à afficher")
+    optimize_parser.add_argument("--strategy", choices=["breakout", "ema_trend", "mean_reversion"], default=None)
 
-    tickers_parser = subparsers.add_parser("tickers", help="Récupérer les tickers Kraken Futures")
+    compare_parser = subparsers.add_parser("compare", help="Comparer les stratégies connues")
+    compare_parser.add_argument("--csv", help="Chemin CSV OHLCV")
+
+    subparsers.add_parser("tickers", help="Récupérer les tickers Kraken Futures")
 
     args = parser.parse_args()
     config = load_config()
+    if getattr(args, "strategy", None):
+        config = config_with_strategy(config, args.strategy)
 
     if args.command == "backtest":
         if args.csv:
@@ -54,6 +63,17 @@ def main() -> None:
             from kraken_bot.exchange import KrakenFuturesClient
             df = KrakenFuturesClient(config).fetch_ohlcv(config.symbol)
         result = optimize(df, config)[: args.top]
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return
+
+    if args.command == "compare":
+        if args.csv:
+            import pandas as pd
+            df = pd.read_csv(args.csv)
+        else:
+            from kraken_bot.exchange import KrakenFuturesClient
+            df = KrakenFuturesClient(config).fetch_ohlcv(config.symbol)
+        result = compare_known_strategies(df, config)
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return
 

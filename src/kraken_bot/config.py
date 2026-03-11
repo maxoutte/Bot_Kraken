@@ -16,6 +16,7 @@ class BotConfig:
     timeframe_minutes: int
     paper_trading: bool
     live_enabled: bool
+    strategy_name: str
     risk_per_trade: float
     max_leverage: float
     max_open_positions: int
@@ -27,6 +28,10 @@ class BotConfig:
     take_profit_rr: float
     min_trend_gap_pct: float
     min_atr_pct: float
+    mean_reversion_period: int
+    bollinger_std: float
+    zscore_entry: float
+    zscore_exit: float
     loop_seconds: int
     starting_capital: float
     fee_rate: float
@@ -55,10 +60,11 @@ def load_config() -> BotConfig:
         api_secret=os.getenv("KRAKEN_API_SECRET", ""),
         base_url=os.getenv("KRAKEN_BASE_URL", "https://futures.kraken.com/derivatives/api/v3"),
         charts_url=os.getenv("KRAKEN_CHARTS_URL", "https://futures.kraken.com/api/charts/v1/trade"),
-        symbol=os.getenv("KRAKEN_SYMBOL", "PF_XBTUSD"),
+        symbol=os.getenv("KRAKEN_SYMBOL", "PF_ETHUSD"),
         timeframe_minutes=int(os.getenv("TIMEFRAME_MINUTES", "15")),
         paper_trading=_get_bool("PAPER_TRADING", True),
         live_enabled=_get_bool("LIVE_ENABLED", False),
+        strategy_name=os.getenv("STRATEGY_NAME", "breakout"),
         risk_per_trade=float(os.getenv("RISK_PER_TRADE", "0.01")),
         max_leverage=float(os.getenv("MAX_LEVERAGE", "2")),
         max_open_positions=int(os.getenv("MAX_OPEN_POSITIONS", "1")),
@@ -70,6 +76,10 @@ def load_config() -> BotConfig:
         take_profit_rr=float(os.getenv("TAKE_PROFIT_RR", "2.0")),
         min_trend_gap_pct=float(os.getenv("MIN_TREND_GAP_PCT", "0.0015")),
         min_atr_pct=float(os.getenv("MIN_ATR_PCT", "0.0025")),
+        mean_reversion_period=int(os.getenv("MEAN_REVERSION_PERIOD", "20")),
+        bollinger_std=float(os.getenv("BOLLINGER_STD", "2.0")),
+        zscore_entry=float(os.getenv("ZSCORE_ENTRY", "2.0")),
+        zscore_exit=float(os.getenv("ZSCORE_EXIT", "0.5")),
         loop_seconds=int(os.getenv("LOOP_SECONDS", "60")),
         starting_capital=float(os.getenv("STARTING_CAPITAL", "10000")),
         fee_rate=float(os.getenv("FEE_RATE", "0.0005")),
