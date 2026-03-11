@@ -1,0 +1,49 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from .storage import Storage
+
+
+HTML_TEMPLATE = """<!doctype html>
+<html lang=\"fr\">
+<head>
+  <meta charset=\"utf-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Kraken Bot Dashboard</title>
+  <style>
+    body{font-family:Arial,sans-serif;max-width:1100px;margin:24px auto;padding:0 16px;background:#0f172a;color:#e2e8f0}
+    .card{background:#111827;padding:16px;border-radius:12px;margin-bottom:16px}
+    pre{white-space:pre-wrap;word-break:break-word;background:#020617;padding:12px;border-radius:8px}
+    h1,h2{margin:0 0 12px}
+  </style>
+</head>
+<body>
+  <h1>Kraken Futures Bot</h1>
+  <div class=\"card\"><h2>État courant</h2><pre id=\"status\"></pre></div>
+  <div class=\"card\"><h2>Derniers scans</h2><pre id=\"scans\"></pre></div>
+  <div class=\"card\"><h2>Derniers trades</h2><pre id=\"trades\"></pre></div>
+<script>
+async function load(){
+  const [status, scans, trades] = await Promise.all([
+    fetch('data/status.json').then(r=>r.json()).catch(()=>({})),
+    fetch('data/scans.jsonl').then(r=>r.text()).catch(()=>''),
+    fetch('data/trades.jsonl').then(r=>r.text()).catch(()=>''),
+  ]);
+  document.getElementById('status').textContent = JSON.stringify(status, null, 2);
+  document.getElementById('scans').textContent = scans.split('\n').filter(Boolean).slice(-10).join('\n\n');
+  document.getElementById('trades').textContent = trades.split('\n').filter(Boolean).slice(-10).join('\n\n');
+}
+load();
+</script>
+</body>
+</html>
+"""
+
+
+def build_dashboard(base_dir: str, output_path: str) -> str:
+    Storage(base_dir)  # ensure exists
+    path = Path(output_path)
+    path.write_text(HTML_TEMPLATE, encoding="utf-8")
+    return str(path)

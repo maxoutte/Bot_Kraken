@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-03-11 18:30:00",
+  "symbol": "PF_ETHUSD",
+  "strategy": "mean_reversion",
+  "position": null,
+  "capital": 10000.0,
+  "last_result": {
+    "timestamp": "2026-03-11 18:30:00",
+    "strategy": "mean_reversion",
+    "symbol": "PF_ETHUSD",
+    "price": 2073.9,
+    "signal": {
+      "action": "hold",
+      "reason": "Pas d'excès statistique",
+      "side": null,
+      "stop_loss": null,
+      "take_profit": null
+    },
+    "position": null,
+    "capital": 10000.0,
+    "action_result": null
+  }
+}

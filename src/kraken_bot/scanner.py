@@ -6,6 +6,7 @@ from .backtest import Backtester
 from .config import BotConfig
 from .exchange import KrakenFuturesClient
 from .news import fetch_news
+from .polymarket import fetch_polymarket_sentiment
 from .strategy import build_strategy, config_with_strategy
 
 
@@ -20,6 +21,7 @@ def analyze_symbol(config: BotConfig, symbol: str) -> list[dict]:
         signal = strategy.generate_signal(df, None)
         backtest = Backtester(local).run(df)
         news = fetch_news(symbol, config.news_query_terms) if config.news_enabled else {"score": 0, "headlines": []}
+        polymarket = fetch_polymarket_sentiment(symbol) if config.news_enabled else {"score": 0, "headlines": []}
         regime_score = _regime_score(signal.action, signal.reason)
         total_score = (
             (backtest["profit_factor"] or 0.0) * 2.0
@@ -28,6 +30,7 @@ def analyze_symbol(config: BotConfig, symbol: str) -> list[dict]:
             - backtest["max_drawdown"] * 5.0
             + regime_score
             + news["score"] * 0.25
+            + polymarket["score"] * 0.35
         )
         results.append(
             {
@@ -42,6 +45,7 @@ def analyze_symbol(config: BotConfig, symbol: str) -> list[dict]:
                     "total_trades": backtest["total_trades"],
                 },
                 "news": news,
+                "polymarket": polymarket,
                 "score": total_score,
             }
         )

@@ -13,6 +13,7 @@ if SRC not in sys.path:
 from kraken_bot.backtest import Backtester, compare_known_strategies, optimize
 from kraken_bot.bot import TradingBot
 from kraken_bot.config import load_config
+from kraken_bot.dashboard import build_dashboard
 from kraken_bot.scanner import analyze_symbol, scan_market
 from kraken_bot.strategy import config_with_strategy
 
@@ -25,6 +26,8 @@ def main() -> None:
     run_parser.add_argument("--csv", help="Chemin CSV OHLCV pour simulation", default=None)
     run_parser.add_argument("--once", action="store_true", help="Exécuter une seule itération")
     run_parser.add_argument("--strategy", choices=["breakout", "ema_trend", "mean_reversion"], default=None)
+
+    scan_run_parser = subparsers.add_parser("scan-run", help="Scanner et journaliser les opportunités")
 
     backtest_parser = subparsers.add_parser("backtest", help="Backtest sur CSV ou marché Kraken")
     backtest_parser.add_argument("--csv", help="Chemin CSV OHLCV")
@@ -41,9 +44,9 @@ def main() -> None:
     analyze_parser = subparsers.add_parser("analyze", help="Analyser une paire avec plusieurs stratégies")
     analyze_parser.add_argument("--symbol", required=True)
 
-    scan_parser = subparsers.add_parser("scan", help="Scanner plusieurs paires et classer les opportunités")
-
+    subparsers.add_parser("scan", help="Scanner plusieurs paires et classer les opportunités")
     subparsers.add_parser("tickers", help="Récupérer les tickers Kraken Futures")
+    subparsers.add_parser("dashboard", help="Générer le dashboard HTML")
 
     args = parser.parse_args()
     config = load_config()
@@ -93,10 +96,20 @@ def main() -> None:
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return
 
+    if args.command == "scan-run":
+        result = TradingBot(config).scan_and_log()
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return
+
     if args.command == "tickers":
         from kraken_bot.exchange import KrakenFuturesClient
         result = KrakenFuturesClient(config).fetch_tickers()
         print(json.dumps(result, indent=2, ensure_ascii=False))
+        return
+
+    if args.command == "dashboard":
+        path = build_dashboard(os.path.join(ROOT, "data"), os.path.join(ROOT, "dashboard.html"))
+        print(json.dumps({"dashboard": path}, ensure_ascii=False))
         return
 
     if args.command == "run":
