@@ -1,14 +1,10 @@
 {
-  "timestamp": "2026-03-11 18:30:00",
-  "symbol": "PF_ETHUSD",
-  "strategy": "mean_reversion",
-  "position": null,
+  "timestamp": 1773254848,
   "capital": 10000.0,
-  "last_result": {
-    "timestamp": "2026-03-11 18:30:00",
+  "position": null,
+  "best_setup": {
+    "symbol": "PF_XBTUSD",
     "strategy": "mean_reversion",
-    "symbol": "PF_ETHUSD",
-    "price": 2073.9,
     "signal": {
       "action": "hold",
       "reason": "Pas d'excès statistique",
@@ -16,8 +12,80 @@
       "stop_loss": null,
       "take_profit": null
     },
-    "position": null,
-    "capital": 10000.0,
-    "action_result": null
-  }
+    "backtest_summary": {
+      "net_pnl": 415.07656876481633,
+      "win_rate": 0.7777777777777778,
+      "profit_factor": 2.162524587432089,
+      "max_drawdown": 0.019631445126107785,
+      "total_trades": 9
+    },
+    "news": {
+      "symbol": "PF_XBTUSD",
+      "query": "bitcoin btc xbt crypto bitcoin ethereum sec etf hack regulation fed rates liquidation",
+      "score": 0,
+      "headlines": [
+        {
+          "title": "Polskie Forum Bitcoin przenosi się na Discord",
+          "url": "https://forum.bitcoin.pl/"
+        },
+        {
+          "title": "Formularz kontaktowy - forum.bitcoin.pl",
+          "url": "https://forum.bitcoin.pl/?page_id=54"
+        },
+        {
+          "title": "Polskie Forum Bitcoin - Index page",
+          "url": "https://forum.bitcoin.pl/show"
+        },
+        {
+          "title": "Tutaj zapłacisz bitcoinami - Polskie Forum Bitcoin",
+          "url": "https://forum.bitcoin.pl/tutaj-zaplacisz-bitcoin-f10.html/"
+        },
+        {
+          "title": "forum.bitcoin.pl",
+          "url": "https://forum.bitcoin.pl/cron.php"
+        }
+      ]
+    },
+    "polymarket": {
+      "symbol": "PF_XBTUSD",
+      "score": -2,
+      "headlines": [
+        {
+          "title": "Polskie Forum Bitcoin przenosi się na Discord",
+          "url": "https://forum.bitcoin.pl/"
+        },
+        {
+          "title": "Formularz kontaktowy - forum.bitcoin.pl",
+          "url": "https://forum.bitcoin.pl/?page_id=54"
+        },
+        {
+          "title": "Polskie Forum Bitcoin - Index page",
+          "url": "https://forum.bitcoin.pl/show"
+        },
+        {
+          "title": "缩写fed是什么意思？ - 百度知道",
+          "url": "https://zhidao.baidu.com/question/338668648431642685.html"
+        },
+        {
+          "title": "联邦快递人工客服电话 - 百度知道",
+          "url": "https://zhidao.baidu.com/question/1742082275621941227.html"
+        },
+        {
+          "title": "FED美联储的英文全称是什么_百度知道",
+          "url": "https://zhidao.baidu.com/question/313073108.html"
+        },
+        {
+          "title": "Polskie Forum Bitcoin przenosi się na Discord",
+          "url": "https://forum.bitcoin.pl/"
+        },
+        {
+          "title": "Formularz kontaktowy - forum.bitcoin.pl",
+          "url": "https://forum.bitcoin.pl/?page_id=54"
+        }
+      ]
+    },
+    "score": 7.157830348613277
+  },
+  "symbol": "PF_ETHUSD",
+  "strategy": "breakout"
 }

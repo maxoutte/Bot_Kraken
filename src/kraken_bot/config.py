@@ -35,20 +35,17 @@ class BotConfig:
     zscore_exit: float
     news_enabled: bool
     news_query_terms: str
+    auto_trade_enabled: bool
+    auto_trade_score_threshold: float
+    dashboard_host: str
+    dashboard_port: int
+    dashboard_refresh_seconds: int
     loop_seconds: int
     starting_capital: float
     fee_rate: float
 
 
-TIMEFRAME_MAP = {
-    1: "1m",
-    5: "5m",
-    15: "15m",
-    30: "30m",
-    60: "1h",
-    240: "4h",
-    1440: "1d",
-}
+TIMEFRAME_MAP = {1: "1m", 5: "5m", 15: "15m", 30: "30m", 60: "1h", 240: "4h", 1440: "1d"}
 
 
 def _get_bool(name: str, default: bool) -> bool:
@@ -90,7 +87,12 @@ def load_config() -> BotConfig:
         zscore_entry=float(os.getenv("ZSCORE_ENTRY", "2.0")),
         zscore_exit=float(os.getenv("ZSCORE_EXIT", "0.5")),
         news_enabled=_get_bool("NEWS_ENABLED", True),
-        news_query_terms=os.getenv("NEWS_QUERY_TERMS", "crypto bitcoin ethereum sec etf hack regulation fed rates liquidation") ,
+        news_query_terms=os.getenv("NEWS_QUERY_TERMS", "crypto bitcoin ethereum sec etf hack regulation fed rates liquidation"),
+        auto_trade_enabled=_get_bool("AUTO_TRADE_ENABLED", False),
+        auto_trade_score_threshold=float(os.getenv("AUTO_TRADE_SCORE_THRESHOLD", "6.0")),
+        dashboard_host=os.getenv("DASHBOARD_HOST", "127.0.0.1"),
+        dashboard_port=int(os.getenv("DASHBOARD_PORT", "8765")),
+        dashboard_refresh_seconds=int(os.getenv("DASHBOARD_REFRESH_SECONDS", "5")),
         loop_seconds=int(os.getenv("LOOP_SECONDS", "60")),
         starting_capital=float(os.getenv("STARTING_CAPITAL", "10000")),
         fee_rate=float(os.getenv("FEE_RATE", "0.0005")),

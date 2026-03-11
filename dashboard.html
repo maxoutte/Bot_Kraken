@@ -1,39 +1,18 @@
 <!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kraken Bot Dashboard</title>
-  <style>
-    body{font-family:Arial,sans-serif;max-width:1100px;margin:24px auto;padding:0 16px;background:#0f172a;color:#e2e8f0}
-    .card{background:#111827;padding:16px;border-radius:12px;margin-bottom:16px}
-    pre{white-space:pre-wrap;word-break:break-word;background:#020617;padding:12px;border-radius:8px}
-    h1,h2{margin:0 0 12px}
-  </style>
-</head>
-<body>
-  <h1>Kraken Futures Bot</h1>
-  <div class="card"><h2>État courant</h2><pre id="status"></pre></div>
-  <div class="card"><h2>Derniers scans</h2><pre id="scans"></pre></div>
-  <div class="card"><h2>Derniers trades</h2><pre id="trades"></pre></div>
+<html lang="fr"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Kraken Bot Dashboard</title>
+<style>
+body{font-family:Inter,Arial,sans-serif;max-width:1200px;margin:24px auto;padding:0 16px;background:#0f172a;color:#e2e8f0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}.card{background:#111827;padding:16px;border-radius:12px}
+pre{white-space:pre-wrap;word-break:break-word;background:#020617;padding:12px;border-radius:8px;max-height:420px;overflow:auto}.ok{color:#34d399}.warn{color:#fbbf24}
+</style></head><body><h1>Kraken Futures Bot — Live Dashboard</h1><div class="grid"><div class="card"><h2>État</h2><pre id="status"></pre></div><div class="card"><h2>Résumé</h2><pre id="summary"></pre></div></div><div class="grid"><div class="card"><h2>Top opportunités</h2><pre id="scans"></pre></div><div class="card"><h2>Trades</h2><pre id="trades"></pre></div></div>
 <script>
 async function load(){
-  const [status, scans, trades] = await Promise.all([
-    fetch('data/status.json').then(r=>r.json()).catch(()=>({})),
-    fetch('data/scans.jsonl').then(r=>r.text()).catch(()=>''),
-    fetch('data/trades.jsonl').then(r=>r.text()).catch(()=>''),
-  ]);
-  document.getElementById('status').textContent = JSON.stringify(status, null, 2);
-  document.getElementById('scans').textContent = scans.split('
-').filter(Boolean).slice(-10).join('
-
-');
-  document.getElementById('trades').textContent = trades.split('
-').filter(Boolean).slice(-10).join('
-
-');
+ const data=await fetch('/api/state').then(r=>r.json());
+ document.getElementById('status').textContent=JSON.stringify(data.status,null,2);
+ document.getElementById('summary').textContent=JSON.stringify(data.summary,null,2);
+ document.getElementById('scans').textContent=JSON.stringify(data.latestScans,null,2);
+ document.getElementById('trades').textContent=JSON.stringify(data.latestTrades,null,2);
 }
-load();
-</script>
-</body>
-</html>
+load(); setInterval(load, 5000);
+</script></body></html>
