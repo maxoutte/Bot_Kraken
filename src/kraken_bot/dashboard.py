@@ -4,23 +4,70 @@ import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
+from .control import run_action
 
 HTML_TEMPLATE = """<!doctype html>
 <html lang=\"fr\"><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>
-<title>Kraken Bot Dashboard</title>
+<title>Kraken Bot App</title>
 <style>
-body{font-family:Inter,Arial,sans-serif;max-width:1200px;margin:24px auto;padding:0 16px;background:#0f172a;color:#e2e8f0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}.card{background:#111827;padding:16px;border-radius:12px}
-pre{white-space:pre-wrap;word-break:break-word;background:#020617;padding:12px;border-radius:8px;max-height:420px;overflow:auto}.ok{color:#34d399}.warn{color:#fbbf24}
-</style></head><body><h1>Kraken Futures Bot — Live Dashboard</h1><div class=\"grid\"><div class=\"card\"><h2>État</h2><pre id=\"status\"></pre></div><div class=\"card\"><h2>Résumé</h2><pre id=\"summary\"></pre></div></div><div class=\"grid\"><div class=\"card\"><h2>Top opportunités</h2><pre id=\"scans\"></pre></div><div class=\"card\"><h2>Trades</h2><pre id=\"trades\"></pre></div></div>
+body{font-family:Inter,Arial,sans-serif;max-width:1400px;margin:24px auto;padding:0 16px;background:#0f172a;color:#e2e8f0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.card{background:#111827;padding:16px;border-radius:12px}
+pre{white-space:pre-wrap;word-break:break-word;background:#020617;padding:12px;border-radius:8px;max-height:420px;overflow:auto}
+button,select,input{background:#1f2937;color:#e5e7eb;border:1px solid #374151;border-radius:8px;padding:10px 12px;margin:4px;cursor:pointer}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+</style></head><body>
+<h1>Kraken Futures Bot — Application graphique</h1>
+<div class=\"card\">
+  <div class=\"controls\">
+    <label>Paire <input id=\"symbol\" value=\"PF_XBTUSD\" /></label>
+    <label>Stratégie <select id=\"strategy\"><option>breakout</option><option>ema_trend</option><option selected>mean_reversion</option></select></label>
+    <button onclick=\"runAction('tickers')\">Tickers</button>
+    <button onclick=\"runAction('scan')\">Scan</button>
+    <button onclick=\"runAction('scan-run')\">Scan + Log</button>
+    <button onclick=\"runAction('analyze')\">Analyze</button>
+    <button onclick=\"runAction('compare')\">Compare</button>
+    <button onclick=\"runAction('backtest')\">Backtest</button>
+    <button onclick=\"runAction('optimize')\">Optimize</button>
+    <button onclick=\"runAction('run-once')\">Run Once</button>
+    <button onclick=\"toggleWatch()\" id=\"watchBtn\">Start Watch</button>
+    <button onclick=\"load()\">Refresh</button>
+  </div>
+</div>
+<div class=\"grid\">
+  <div class=\"card\"><h2>État</h2><pre id=\"status\"></pre></div>
+  <div class=\"card\"><h2>Résumé</h2><pre id=\"summary\"></pre></div>
+</div>
+<div class=\"grid\">
+  <div class=\"card\"><h2>Top opportunités</h2><pre id=\"scans\"></pre></div>
+  <div class=\"card\"><h2>Trades</h2><pre id=\"trades\"></pre></div>
+</div>
+<div class=\"card\"><h2>Sortie commande</h2><pre id=\"output\"></pre></div>
 <script>
+let watchTimer=null;
 async function load(){
  const data=await fetch('/api/state').then(r=>r.json());
  document.getElementById('status').textContent=JSON.stringify(data.status,null,2);
  document.getElementById('summary').textContent=JSON.stringify(data.summary,null,2);
  document.getElementById('scans').textContent=JSON.stringify(data.latestScans,null,2);
  document.getElementById('trades').textContent=JSON.stringify(data.latestTrades,null,2);
+}
+async function runAction(action){
+ const symbol=document.getElementById('symbol').value;
+ const strategy=document.getElementById('strategy').value;
+ document.getElementById('output').textContent='Exécution...';
+ const res=await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action,symbol,strategy})});
+ const data=await res.json();
+ document.getElementById('output').textContent=JSON.stringify(data,null,2);
+ load();
+}
+function toggleWatch(){
+ const btn=document.getElementById('watchBtn');
+ if(watchTimer){ clearInterval(watchTimer); watchTimer=null; btn.textContent='Start Watch'; return; }
+ runAction('watch-cycle');
+ watchTimer=setInterval(()=>runAction('watch-cycle'), REFRESH_MS);
+ btn.textContent='Stop Watch';
 }
 load(); setInterval(load, REFRESH_MS);
 </script></body></html>"""
@@ -52,6 +99,18 @@ def serve_dashboard(data_dir: str, host: str, port: int, refresh_seconds: int) -
                 payload = _build_state(base)
                 return self._send(json.dumps(payload, ensure_ascii=False, indent=2).encode('utf-8'), 'application/json')
             self._send(b'Not found', 'text/plain', 404)
+
+        def do_POST(self) -> None:  # noqa: N802
+            if self.path != '/api/action':
+                return self._send(b'Not found', 'text/plain', 404)
+            length = int(self.headers.get('Content-Length', '0'))
+            raw = self.rfile.read(length) if length else b'{}'
+            payload = json.loads(raw.decode('utf-8'))
+            try:
+                result = run_action(payload.get('action', ''), payload.get('symbol'), payload.get('strategy'))
+                return self._send(json.dumps({'ok': True, 'result': result}, ensure_ascii=False, indent=2).encode('utf-8'), 'application/json')
+            except Exception as exc:
+                return self._send(json.dumps({'ok': False, 'error': str(exc)}, ensure_ascii=False, indent=2).encode('utf-8'), 'application/json', 500)
 
     ThreadingHTTPServer((host, port), Handler).serve_forever()
 

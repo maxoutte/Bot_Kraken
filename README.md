@@ -1,94 +1,65 @@
 # Kraken Futures Bot
 
-Bot de trading **Kraken Futures** en **Python**, orienté **paper trading**, **backtests**, **scan multi-paires** et **filtre news**.
+Bot de trading **Kraken Futures** en **Python**, avec :
+- scan multi-paires,
+- stratégies multiples,
+- paper trading,
+- logs,
+- application web locale interactive avec boutons.
 
-## V4 : philosophie
+## Application graphique locale
 
-Le bot n'est plus bloqué sur une seule paire.
-Il peut maintenant :
-- scanner plusieurs contrats futures Kraken
-- tester plusieurs stratégies connues
-- classer les opportunités
-- utiliser un filtre news/sentiment léger pour éviter de trader totalement à l'aveugle
+L'interface principale est maintenant une **application web locale** avec :
+- choix de la **paire**,
+- choix de la **stratégie**,
+- **un bouton par fonctionnalité / commande**,
+- affichage live de l'état,
+- top opportunités,
+- derniers trades,
+- sortie détaillée de chaque action.
 
-## Stratégies intégrées
-
-- `breakout` — cassure + filtre de tendance
-- `ema_trend` — suivi de tendance EMA
-- `mean_reversion` — retour à la moyenne via z-score / Bollinger
-
-## Univers de marché
-
-Par défaut :
-- `PF_XBTUSD`
-- `PF_ETHUSD`
-- `PF_SOLUSD`
-- `PF_BNBUSD`
-- `PF_LINKUSD`
-
-Modifiable via `KRAKEN_SYMBOLS` dans `.env`.
-
-## Installation
+## Lancer l'application
 
 ```bash
 cd kraken-futures-bot
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
+python main.py serve
 ```
 
-## Commandes utiles
-
-### Scanner tout le marché configuré
+Puis ouvrir :
 
 ```bash
-python main.py scan
+http://127.0.0.1:8765
 ```
 
-### Analyser une paire précise avec plusieurs stratégies
+## Boutons inclus
 
-```bash
-python main.py analyze --symbol PF_ETHUSD
-python main.py analyze --symbol PF_XBTUSD
-```
+- Tickers
+- Scan
+- Scan + Log
+- Analyze
+- Compare
+- Backtest
+- Optimize
+- Run Once
+- Start Watch / Stop Watch
+- Refresh
 
-### Comparer les stratégies sur la paire courante
+## Auto paper trading
 
-```bash
-python main.py compare
-```
+Activable dans `.env` :
+- `AUTO_TRADE_ENABLED=true`
+- `AUTO_TRADE_SCORE_THRESHOLD=6.0`
 
-### Optimiser une stratégie
+## Fichiers utiles
 
-```bash
-python main.py optimize --strategy mean_reversion --top 10
-python main.py optimize --strategy ema_trend --top 10
-python main.py optimize --strategy breakout --top 10
-```
+- `data/status.json`
+- `data/scans.jsonl`
+- `data/trades.jsonl`
+- `data/trades.csv`
 
-## News / sentiment
+## But
 
-Le module news interroge le moteur local SearXNG et calcule un score lexical simple à partir des headlines.
-
-Important :
-- ce n'est **pas** un oracle
-- c'est un **filtre contextuel**
-- il sert à pondérer une opportunité, pas à déclencher seul un trade
-
-## Sécurité
-
-Toujours bloqué par défaut :
-- `PAPER_TRADING=true`
-- `LIVE_ENABLED=false`
-
-## Limites actuelles
-
-- scoring news encore simple
-- pas encore de pondération macro avancée
-- pas encore de persistance complète d'un portefeuille multi-positions
-- pas encore de walk-forward analysis multi-actifs
-
-## But réel
-
-Le but est de choisir, à chaque cycle, **la paire + la stratégie les plus intéressantes parmi plusieurs candidates**, au lieu d'imposer une seule idée au marché.
+Avoir une interface pilotable visuellement, avec boutons, état live et historique, sans dépendre d'une stack desktop lourde.

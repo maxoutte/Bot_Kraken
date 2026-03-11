@@ -29,7 +29,7 @@ def main() -> None:
 
     subparsers.add_parser('scan-run', help='Scanner et journaliser les opportunités')
     subparsers.add_parser('watch', help='Boucle auto-watch avec auto paper trading')
-    subparsers.add_parser('serve', help='Lancer l\'interface web live')
+    subparsers.add_parser('serve', help='Lancer l\'application web locale')
 
     backtest_parser = subparsers.add_parser('backtest', help='Backtest sur CSV ou marché Kraken')
     backtest_parser.add_argument('--csv', help='Chemin CSV OHLCV')
