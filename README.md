@@ -1,37 +1,32 @@
 # Kraken Futures Bot
 
-Bot de trading **Kraken Futures** en **Python**, orienté **paper trading**, **backtests** et **comparaison de stratégies** sur des marchés comme **ETH/USD**.
+Bot de trading **Kraken Futures** en **Python**, orienté **paper trading**, **backtests**, **scan multi-paires** et **filtre news**.
 
-## V3 : ce qui a été ajouté
+## V4 : philosophie
 
-- passage par défaut sur `PF_ETHUSD`
-- comparaison de plusieurs stratégies classiques
-- optimisation par famille de stratégie
-- exécution d'une stratégie choisie via CLI
-- garde-fous toujours actifs pour éviter le live accidentel
+Le bot n'est plus bloqué sur une seule paire.
+Il peut maintenant :
+- scanner plusieurs contrats futures Kraken
+- tester plusieurs stratégies connues
+- classer les opportunités
+- utiliser un filtre news/sentiment léger pour éviter de trader totalement à l'aveugle
 
 ## Stratégies intégrées
 
-### 1. `breakout`
-Approche trend-following :
-- cassure du plus haut / plus bas récent
-- filtre de tendance EMA
-- filtre de volatilité ATR
-- stop ATR + take profit en ratio risque/rendement
+- `breakout` — cassure + filtre de tendance
+- `ema_trend` — suivi de tendance EMA
+- `mean_reversion` — retour à la moyenne via z-score / Bollinger
 
-### 2. `ema_trend`
-Approche classique et connue :
-- suivi de tendance par EMA rapide / EMA lente
-- entrée dans le sens de la tendance
-- stop ATR
-- sortie sur stop, target ou retournement de croisement
+## Univers de marché
 
-### 3. `mean_reversion`
-Approche de retour à la moyenne :
-- base moyenne mobile
-- écart statistique type Bollinger / z-score
-- entrée quand le prix s'éloigne fortement de la moyenne
-- sortie sur retour vers la moyenne
+Par défaut :
+- `PF_XBTUSD`
+- `PF_ETHUSD`
+- `PF_SOLUSD`
+- `PF_BNBUSD`
+- `PF_LINKUSD`
+
+Modifiable via `KRAKEN_SYMBOLS` dans `.env`.
 
 ## Installation
 
@@ -43,90 +38,57 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-## Configuration
-
-Variables importantes :
-
-- `KRAKEN_SYMBOL=PF_ETHUSD`
-- `TIMEFRAME_MINUTES=15`
-- `PAPER_TRADING=true`
-- `LIVE_ENABLED=false`
-- `STRATEGY_NAME=breakout`
-- `RISK_PER_TRADE=0.01`
-- `MAX_LEVERAGE=2`
-- `BREAKOUT_LOOKBACK=20`
-- `EMA_FAST=20`
-- `EMA_SLOW=50`
-- `ATR_PERIOD=14`
-- `ATR_STOP_MULTIPLIER=1.5`
-- `TAKE_PROFIT_RR=2.0`
-- `MEAN_REVERSION_PERIOD=20`
-- `BOLLINGER_STD=2.0`
-- `ZSCORE_ENTRY=2.0`
-- `ZSCORE_EXIT=0.5`
-- `FEE_RATE=0.0005`
-
 ## Commandes utiles
 
-### Tickers
+### Scanner tout le marché configuré
 
 ```bash
-python main.py tickers
+python main.py scan
 ```
 
-### Backtest d'une stratégie précise
+### Analyser une paire précise avec plusieurs stratégies
 
 ```bash
-python main.py backtest --strategy breakout
-python main.py backtest --strategy ema_trend
-python main.py backtest --strategy mean_reversion
+python main.py analyze --symbol PF_ETHUSD
+python main.py analyze --symbol PF_XBTUSD
 ```
 
-### Comparer les stratégies connues sur le même marché
+### Comparer les stratégies sur la paire courante
 
 ```bash
 python main.py compare
 ```
 
-### Optimiser une famille de stratégie
+### Optimiser une stratégie
 
 ```bash
-python main.py optimize --strategy breakout --top 10
-python main.py optimize --strategy ema_trend --top 10
 python main.py optimize --strategy mean_reversion --top 10
+python main.py optimize --strategy ema_trend --top 10
+python main.py optimize --strategy breakout --top 10
 ```
 
-### Exécuter une itération en paper trading
+## News / sentiment
 
-```bash
-python main.py run --strategy breakout --once
-```
+Le module news interroge le moteur local SearXNG et calcule un score lexical simple à partir des headlines.
 
-## Important
+Important :
+- ce n'est **pas** un oracle
+- c'est un **filtre contextuel**
+- il sert à pondérer une opportunité, pas à déclencher seul un trade
 
-Le but n'est pas de choisir la stratégie qui a juste le meilleur **win rate**, mais celle qui garde un bon compromis entre :
-- profit factor
-- drawdown
-- fréquence de trade
-- comportement cohérent selon les régimes de marché
+## Sécurité
 
-## Live trading
-
-Le live reste volontairement bloqué par défaut :
-
+Toujours bloqué par défaut :
 - `PAPER_TRADING=true`
 - `LIVE_ENABLED=false`
 
-Même avec les clés API, pas d'ordre réel tant que tu ne l'actives pas explicitement.
-
 ## Limites actuelles
 
-- pas encore de websocket temps réel
-- pas encore de persistance robuste des états et ordres
-- pas encore de walk-forward analysis
-- optimisation simple, pas encore de framework complet de recherche paramétrique
+- scoring news encore simple
+- pas encore de pondération macro avancée
+- pas encore de persistance complète d'un portefeuille multi-positions
+- pas encore de walk-forward analysis multi-actifs
 
-## Avertissement
+## But réel
 
-Le futures crypto reste risqué.
-Cette base doit servir à tester, comparer, éliminer les mauvaises idées rapidement et ne passer au live qu'après validation sérieuse.
+Le but est de choisir, à chaque cycle, **la paire + la stratégie les plus intéressantes parmi plusieurs candidates**, au lieu d'imposer une seule idée au marché.

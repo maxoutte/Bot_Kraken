@@ -13,6 +13,7 @@ if SRC not in sys.path:
 from kraken_bot.backtest import Backtester, compare_known_strategies, optimize
 from kraken_bot.bot import TradingBot
 from kraken_bot.config import load_config
+from kraken_bot.scanner import analyze_symbol, scan_market
 from kraken_bot.strategy import config_with_strategy
 
 
@@ -36,6 +37,11 @@ def main() -> None:
 
     compare_parser = subparsers.add_parser("compare", help="Comparer les stratégies connues")
     compare_parser.add_argument("--csv", help="Chemin CSV OHLCV")
+
+    analyze_parser = subparsers.add_parser("analyze", help="Analyser une paire avec plusieurs stratégies")
+    analyze_parser.add_argument("--symbol", required=True)
+
+    scan_parser = subparsers.add_parser("scan", help="Scanner plusieurs paires et classer les opportunités")
 
     subparsers.add_parser("tickers", help="Récupérer les tickers Kraken Futures")
 
@@ -74,6 +80,16 @@ def main() -> None:
             from kraken_bot.exchange import KrakenFuturesClient
             df = KrakenFuturesClient(config).fetch_ohlcv(config.symbol)
         result = compare_known_strategies(df, config)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return
+
+    if args.command == "analyze":
+        result = analyze_symbol(config, args.symbol)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return
+
+    if args.command == "scan":
+        result = scan_market(config)
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return
 

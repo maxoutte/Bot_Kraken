@@ -13,6 +13,7 @@ class BotConfig:
     base_url: str
     charts_url: str
     symbol: str
+    symbols: list[str]
     timeframe_minutes: int
     paper_trading: bool
     live_enabled: bool
@@ -32,6 +33,8 @@ class BotConfig:
     bollinger_std: float
     zscore_entry: float
     zscore_exit: float
+    news_enabled: bool
+    news_query_terms: str
     loop_seconds: int
     starting_capital: float
     fee_rate: float
@@ -53,6 +56,11 @@ def _get_bool(name: str, default: bool) -> bool:
     return value in {"1", "true", "yes", "on"}
 
 
+def _get_symbols() -> list[str]:
+    raw = os.getenv("KRAKEN_SYMBOLS", "PF_XBTUSD,PF_ETHUSD,PF_SOLUSD,PF_BNBUSD,PF_LINKUSD")
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
 def load_config() -> BotConfig:
     load_dotenv()
     return BotConfig(
@@ -61,6 +69,7 @@ def load_config() -> BotConfig:
         base_url=os.getenv("KRAKEN_BASE_URL", "https://futures.kraken.com/derivatives/api/v3"),
         charts_url=os.getenv("KRAKEN_CHARTS_URL", "https://futures.kraken.com/api/charts/v1/trade"),
         symbol=os.getenv("KRAKEN_SYMBOL", "PF_ETHUSD"),
+        symbols=_get_symbols(),
         timeframe_minutes=int(os.getenv("TIMEFRAME_MINUTES", "15")),
         paper_trading=_get_bool("PAPER_TRADING", True),
         live_enabled=_get_bool("LIVE_ENABLED", False),
@@ -80,6 +89,8 @@ def load_config() -> BotConfig:
         bollinger_std=float(os.getenv("BOLLINGER_STD", "2.0")),
         zscore_entry=float(os.getenv("ZSCORE_ENTRY", "2.0")),
         zscore_exit=float(os.getenv("ZSCORE_EXIT", "0.5")),
+        news_enabled=_get_bool("NEWS_ENABLED", True),
+        news_query_terms=os.getenv("NEWS_QUERY_TERMS", "crypto bitcoin ethereum sec etf hack regulation fed rates liquidation") ,
         loop_seconds=int(os.getenv("LOOP_SECONDS", "60")),
         starting_capital=float(os.getenv("STARTING_CAPITAL", "10000")),
         fee_rate=float(os.getenv("FEE_RATE", "0.0005")),
